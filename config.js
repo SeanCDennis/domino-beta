@@ -5,6 +5,6 @@ window.DOMINO_CONFIG = {
 
 window.addEventListener('DOMContentLoaded', () => {
   const script = document.createElement('script');
-  script.src = './solo-mode.js?v=1';
+  script.src = './solo-mode.js?v=2';
   document.body.appendChild(script);
 });
