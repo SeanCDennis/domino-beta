@@ -4,7 +4,16 @@ window.DOMINO_CONFIG = {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-  const script = document.createElement('script');
-  script.src = './solo-mode.js?v=2';
-  document.body.appendChild(script);
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = './domino-clarity.css?v=1';
+  document.head.appendChild(css);
+
+  const clarity = document.createElement('script');
+  clarity.src = './domino-clarity.js?v=1';
+  document.body.appendChild(clarity);
+
+  const solo = document.createElement('script');
+  solo.src = './solo-mode.js?v=2';
+  document.body.appendChild(solo);
 });
