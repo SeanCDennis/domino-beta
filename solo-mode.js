@@ -2,7 +2,7 @@
   let botTimer = null;
 
   function isBotTurn() {
-    return !!(window.room && room.phase === 'playing' && room.players?.[room.turn]?.bot);
+    return !!(room && room.phase === 'playing' && room.players?.[room.turn]?.bot);
   }
 
   function scheduleBots(delay = 350) {
