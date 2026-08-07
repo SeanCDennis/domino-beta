@@ -14,6 +14,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.body.appendChild(clarity);
 
   const solo = document.createElement('script');
-  solo.src = './solo-mode.js?v=2';
+  solo.src = './solo-mode.js?v=3';
   document.body.appendChild(solo);
 });
