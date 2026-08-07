@@ -29,6 +29,7 @@
     room.turn = hd.seat;
     room.requiredOpener = [hd.value, hd.value];
     room.leaderReason = `Big ${hd.value} starts`;
+    room.consecutivePasses = 0;
     room.log?.unshift(`${room.players[hd.seat].name} must open with ${hd.value}-${hd.value}.`);
     if (saveIt) await originalSave();
     if (typeof render === 'function') render();
@@ -65,6 +66,7 @@
       room.players.push({ token:`BOT-${i}`, name:`Test Player ${i + 1}`, seat:i, wallet:coins, wrong:0, bot:true });
     }
     room.soloTest = true;
+    room.consecutivePasses = 0;
     room.log.unshift('Solo Test Mode: washing the bones and filling the table.');
     await originalStartGame();
     await enforceOpeningDouble();
@@ -87,13 +89,20 @@
     const options = legalBotMoves();
 
     if (!options.length) {
-      room.log.unshift(`${bot.name} passed.`);
+      room.log.unshift(`${bot.name} passes.`);
+      room.consecutivePasses = (room.consecutivePasses || 0) + 1;
+      if (room.chain?.length && room.consecutivePasses >= 4) {
+        await locked();
+        render();
+        return;
+      }
       room.turn = (room.turn + 1) % 4;
       await originalSave();
       render();
       return;
     }
 
+    room.consecutivePasses = 0;
     const move = options[Math.floor(Math.random() * options.length)];
     const side = move.legalSides[Math.floor(Math.random() * move.legalSides.length)];
     const placed = orient(move.tile, side);
@@ -108,12 +117,11 @@
       return;
     }
 
-    const v = value();
-    if (v) {
-      const fiveDisallowed = room.rules.points === 'no5' && v === 5;
+    const v = typeof money === 'function' ? money() : 0;
+    if (v > 0) {
       const belowGetIn = !qual(botSeat) && v < 10;
-      if (fiveDisallowed || belowGetIn) {
-        room.log.unshift(`${bot.name} has ${v}, but it does not count.`);
+      if (belowGetIn) {
+        room.log.unshift(`${bot.name} has ${v}, but needs 10+ to get in.`);
       } else {
         if (!qual(botSeat) && v >= 10) setQual(botSeat, true);
         setScore(botSeat, scoreOf(botSeat) + v);
@@ -137,10 +145,14 @@
     botRunning = true;
     try {
       let guard = 0;
-      while (room?.soloTest && room.phase === 'playing' && isBotTurn() && guard++ < 30) {
-        await sleep(450);
+      while (room?.soloTest && room.phase === 'playing' && isBotTurn() && guard++ < 80) {
+        await sleep(500);
         await botOneTurn();
       }
+    } catch (err) {
+      console.error('Solo bot loop error:', err);
+      room?.log?.unshift(`Solo test error: ${err.message}`);
+      if (typeof render === 'function') render();
     } finally {
       botRunning = false;
     }
@@ -171,6 +183,7 @@
       render();
       return;
     }
+    room.consecutivePasses = 0;
     const out = await originalPlay(i, s);
     if (room?.chain?.length) room.requiredOpener = null;
     driveBots();
@@ -181,7 +194,8 @@
   window.passTurn = async function (...args) { const out = await originalPassTurn(...args); driveBots(); return out; };
   window.nextHand = async function (...args) {
     const out = await originalNextHand(...args);
-    await enforceOpeningDouble();
+    room.consecutivePasses = 0;
+    if (!room.chain?.length && room.lastDomino == null) await enforceOpeningDouble();
     driveBots();
     return out;
   };
