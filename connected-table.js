@@ -5,7 +5,13 @@
     const dbl=t[0]===t[1];
     return `<div class="boardbone ${dbl?'double':'horizontal'} ${classes}" ${target?`onclick="chooseBoardTarget('${target}')"`:''}>${face(t[0])}<div class="divider"></div>${face(t[1])}</div>`;
   };
-  const branchBone=(t,classes='',target='')=>`<div class="boardbone vertical ${classes}" ${target?`onclick="chooseBoardTarget('${target}')"`:''}>${face(t[0])}<div class="divider"></div>${face(t[1])}</div>`;
+  // Branch tiles are stored [match, outer]. On the UP arm the matching half must
+  // render on the bottom (touching the spinner/previous tile); on DOWN it must
+  // render on top. This keeps the visible board identical to the engine graph.
+  const branchBone=(t,side,classes='',target='')=>{
+    const shown=side==='U'?[t[1],t[0]]:[t[0],t[1]];
+    return `<div class="boardbone vertical ${classes}" ${target?`onclick="chooseBoardTarget('${target}')"`:''}>${face(shown[0])}<div class="divider"></div>${face(shown[1])}</div>`;
+  };
 
   let selectedIndex=null;
   const originalRenderGame=window.renderGame;
@@ -25,7 +31,7 @@
   function renderBranch(side,targets){
     const arm=room?.spinnerArms?.[side]||[];
     if(!arm.length) return '';
-    return `<div class="spinner-branch ${side==='U'?'up':'down'}">${arm.map((t,i)=>branchBone(t,(i===arm.length-1&&targets.includes(side))?'play-here':'',i===arm.length-1&&targets.includes(side)?side:'')).join('')}</div>`;
+    return `<div class="spinner-branch ${side==='U'?'up':'down'}">${arm.map((t,i)=>branchBone(t,side,(i===arm.length-1&&targets.includes(side))?'play-here':'',i===arm.length-1&&targets.includes(side)?side:'')).join('')}</div>`;
   }
 
   function renderConnectedChain(){
