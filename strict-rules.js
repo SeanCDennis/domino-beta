@@ -16,6 +16,8 @@
     if(!t) return;
     const legal=typeof legalTargetsForTile==='function'?legalTargetsForTile(t):[];
     if(!legal.includes(target)) return;
+    // Hand 1 is the ONLY forced opener: 6-6 is auto-placed before normal play.
+    // Hand 2+ leader may open with any bone; first double played becomes spinner.
     if(room.handNo===1 && !room.chain.length && !(t[0]===6 && t[1]===6)) return;
 
     room.hands[s].splice(i,1);
@@ -79,9 +81,38 @@
 
   const oldNext=window.nextHand;
   if(oldNext) window.nextHand=async function(...args){
-    const out=await oldNext(...args);
-    if(room){room.spinner=null;room.spinnerArms={U:[],D:[]};room.spinnerSides={L:false,R:false};}
-    if(typeof window.driveBots==='function') window.driveBots();
-    return out;
+    // Preserve game totals and qualification from prior hands.
+    const scoresBefore=Array.isArray(room?.scores)?[...room.scores]:null;
+    const qualifiedBefore=Array.isArray(room?.qualified)?[...room.qualified]:null;
+
+    // New-hand layout state must be clean BEFORE the new deal begins.
+    if(room){
+      room.spinner=null;
+      room.spinnerArms={U:[],D:[]};
+      room.spinnerSides={L:false,R:false};
+      room.pendingClaim=null;
+      room.consecutivePasses=0;
+    }
+
+    window.__holdSoloBots=true;
+    try{
+      const out=await oldNext(...args);
+      if(room){
+        if(scoresBefore) room.scores=scoresBefore;
+        if(qualifiedBefore) room.qualified=qualifiedBefore;
+        room.spinner=null;
+        room.spinnerArms={U:[],D:[]};
+        room.spinnerSides={L:false,R:false};
+        room.pendingClaim=null;
+        room.consecutivePasses=0;
+      }
+      await save();
+      render();
+      return out;
+    } finally {
+      window.__holdSoloBots=false;
+      // No auto-big on Hand 2+. The prior domino winner/leader opens manually.
+      if(typeof window.driveBots==='function') window.driveBots();
+    }
   };
 })();
