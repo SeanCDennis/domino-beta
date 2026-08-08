@@ -15,7 +15,10 @@
     const rules=document.getElementById('hostRules');
     if(!rules||document.getElementById('soloTestBtn')) return;
     const btn=document.createElement('button');
-    btn.id='soloTestBtn';btn.className='btn gold';btn.style.marginTop='8px';btn.textContent='Solo Test Mode';btn.onclick=startSoloTest;rules.appendChild(btn);
+    btn.id='soloTestBtn';btn.className='btn gold';btn.style.marginTop='8px';btn.textContent='Solo Test Mode';
+    // Resolve at click time so later strict-rules wrappers are honored.
+    btn.onclick=()=>window.startSoloTest();
+    rules.appendChild(btn);
   }
 
   async function startSoloTest(){
@@ -23,9 +26,8 @@
     const coins=room.startingCoins||50;
     room.players=room.players.filter(p=>!p.bot);
     while(room.players.length<4){const i=room.players.length;room.players.push({token:`BOT-${i}`,name:`Test Player ${i+1}`,seat:i,wallet:coins,wrong:0,bot:true});}
-    room.soloTest=true;room.consecutivePasses=0;room.spinner=null;room.spinnerArms={U:[],D:[]};
+    room.soloTest=true;room.consecutivePasses=0;room.spinner=null;room.spinnerArms={U:[],D:[]};room.spinnerSides={L:false,R:false};
     await originalStartGame();
-    // First-hand bots are intentionally held until strict-rules auto-places Big 6.
     if(!window.__holdSoloBots) driveBots();
   }
 
@@ -36,6 +38,11 @@
 
   async function botOneTurn(){
     if(!isBotTurn()) return;
+    // Absolute first-hand invariant: nobody moves until 6-6 is physically on the table.
+    if(room.handNo===1 && !(room.chain||[]).some(t=>t[0]===6&&t[1]===6)){
+      if(typeof window.autoBigSix==='function') await window.autoBigSix();
+      return;
+    }
     const botSeat=room.turn,bot=room.players[botSeat];
     const options=legalBotMoves();
     if(!options.length){
@@ -77,6 +84,6 @@
   window.play=async function(...args){const out=await originalPlay(...args);driveBots();return out;};
   window.claim=async function(...args){const out=await originalClaim(...args);driveBots();return out;};
   window.passTurn=async function(...args){const out=await originalPassTurn(...args);driveBots();return out;};
-  window.nextHand=async function(...args){const out=await originalNextHand(...args);if(room){room.spinner=null;room.spinnerArms={U:[],D:[]};}driveBots();return out;};
+  window.nextHand=async function(...args){const out=await originalNextHand(...args);if(room){room.spinner=null;room.spinnerArms={U:[],D:[]};room.spinnerSides={L:false,R:false};}driveBots();return out;};
   addSoloButton();
 })();
