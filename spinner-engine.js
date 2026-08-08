@@ -6,14 +6,25 @@
     if(room.spinner===undefined) room.spinner=null;
   }
 
-  function registerSpinner(tile){
+  function isSpinnerTile(tile){
+    return !!(room?.spinner && tile && tile[0]===room.spinner.value && tile[1]===room.spinner.value);
+  }
+
+  function registerSpinner(tile,target='OPEN'){
     ensureSpinnerState();
-    if(!room.spinner && tile && tile[0]===tile[1]){
-      room.spinner={value:tile[0]};
-      room.spinnerArms={U:[],D:[]};
-      room.spinnerSides={L:false,R:false};
-      room.log?.unshift(`${tile[0]}-${tile[1]} is the spinner.`);
-    }
+    if(room.spinner || !tile || tile[0]!==tile[1]) return false;
+
+    room.spinner={value:tile[0]};
+    room.spinnerArms={U:[],D:[]};
+
+    // If the first double is played onto an existing line, one of its two
+    // straight-through sides is already covered by that connection.
+    if(target==='L') room.spinnerSides={L:false,R:true};
+    else if(target==='R') room.spinnerSides={L:true,R:false};
+    else room.spinnerSides={L:false,R:false};
+
+    room.log?.unshift(`${tile[0]}-${tile[1]} is the spinner.`);
+    return true;
   }
 
   function mainEnds(){
@@ -46,8 +57,9 @@
     if(tile.includes(e.L)) out.push('L');
     if(tile.includes(e.R)) out.push('R');
 
-    // Spinner rule: up/down do not open until BOTH original sides of the
-    // first double have been covered. This applies to 6-6, 5-5, 4-4, etc.
+    // The first double of the hand is the spinner, regardless of value:
+    // 6-6, 5-5, 4-4, 3-3, 2-2, 1-1, or 0-0.
+    // Its up/down arms unlock only after BOTH straight sides are covered.
     if(spinnerBranchUnlocked()){
       const u=armEnd('U'), d=armEnd('D');
       if(tile.includes(u)) out.push('U');
@@ -68,27 +80,34 @@
 
     if(target==='OPEN'){
       room.chain.push([tile[0],tile[1]]);
-      registerSpinner(tile);
+      registerSpinner(tile,'OPEN');
       return true;
     }
 
     if(target==='L'){
-      const match=room.chain[0][0];
+      const before=room.chain[0];
+      const match=before[0];
       const q=orientTo(tile,match);
       if(!q) return false;
+
+      // If the spinner itself is currently the left endpoint, this play covers
+      // its left straight side. A double newly played here instead becomes the
+      // spinner with its right straight side already covered.
+      if(isSpinnerTile(before)) room.spinnerSides.L=true;
       room.chain.unshift([q[1],q[0]]);
-      if(room.spinner && !room.spinnerSides.L) room.spinnerSides.L=true;
-      registerSpinner(tile);
+      registerSpinner(tile,'L');
       return true;
     }
 
     if(target==='R'){
-      const match=room.chain[room.chain.length-1][1];
+      const before=room.chain[room.chain.length-1];
+      const match=before[1];
       const q=orientTo(tile,match);
       if(!q) return false;
+
+      if(isSpinnerTile(before)) room.spinnerSides.R=true;
       room.chain.push(q);
-      if(room.spinner && !room.spinnerSides.R) room.spinnerSides.R=true;
-      registerSpinner(tile);
+      registerSpinner(tile,'R');
       return true;
     }
 
