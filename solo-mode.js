@@ -16,7 +16,6 @@
     if(!rules||document.getElementById('soloTestBtn')) return;
     const btn=document.createElement('button');
     btn.id='soloTestBtn';btn.className='btn gold';btn.style.marginTop='8px';btn.textContent='Solo Test Mode';
-    // Resolve at click time so later strict-rules wrappers are honored.
     btn.onclick=()=>window.startSoloTest();
     rules.appendChild(btn);
   }
@@ -38,7 +37,6 @@
 
   async function botOneTurn(){
     if(!isBotTurn()) return;
-    // Absolute first-hand invariant: nobody moves until 6-6 is physically on the table.
     if(room.handNo===1 && !(room.chain||[]).some(t=>t[0]===6&&t[1]===6)){
       if(typeof window.autoBigSix==='function') await window.autoBigSix();
       return;
@@ -84,6 +82,11 @@
   window.play=async function(...args){const out=await originalPlay(...args);driveBots();return out;};
   window.claim=async function(...args){const out=await originalClaim(...args);driveBots();return out;};
   window.passTurn=async function(...args){const out=await originalPassTurn(...args);driveBots();return out;};
-  window.nextHand=async function(...args){const out=await originalNextHand(...args);if(room){room.spinner=null;room.spinnerArms={U:[],D:[]};room.spinnerSides={L:false,R:false};}driveBots();return out;};
+  window.nextHand=async function(...args){
+    if(room){room.spinner=null;room.spinnerArms={U:[],D:[]};room.spinnerSides={L:false,R:false};}
+    const out=await originalNextHand(...args);
+    driveBots();
+    return out;
+  };
   addSoloButton();
 })();
