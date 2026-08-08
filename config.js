@@ -25,4 +25,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const connected = document.createElement('script');
   connected.src = './connected-table.js?v=1';
   document.body.appendChild(connected);
+
+  const scoring = document.createElement('script');
+  scoring.src = './scoring-engine.js?v=1';
+  document.body.appendChild(scoring);
 });
