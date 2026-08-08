@@ -27,6 +27,10 @@ window.addEventListener('DOMContentLoaded', () => {
   document.body.appendChild(connected);
 
   const scoring = document.createElement('script');
-  scoring.src = './scoring-engine.js?v=2';
+  scoring.src = './scoring-engine.js?v=3';
   document.body.appendChild(scoring);
+
+  const strict = document.createElement('script');
+  strict.src = './strict-rules.js?v=1';
+  document.body.appendChild(strict);
 });
