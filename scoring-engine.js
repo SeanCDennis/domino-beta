@@ -6,18 +6,8 @@
     const first = c[0];
     const last = c[c.length - 1];
 
+    // With one bone, both exposed halves count. A double therefore counts twice.
     if (c.length === 1) {
-      if (first[0] === first[1]) {
-        const total = first[0] * 2;
-        return {
-          left: first[0],
-          right: first[1],
-          total,
-          leftLabel: `${first[0]}+${first[1]}`,
-          rightLabel: '',
-          single: true
-        };
-      }
       return {
         left: first[0],
         right: first[1],
@@ -28,6 +18,8 @@
       };
     }
 
+    // Only the two OUTSIDE ends count. If an exposed end is a double,
+    // both halves of that double contribute. Buried doubles contribute nothing.
     const leftContribution = first[0] === first[1] ? first[0] * 2 : first[0];
     const rightContribution = last[0] === last[1] ? last[1] * 2 : last[1];
 
@@ -42,13 +34,34 @@
 
   window.exposedEndState = exposedEndState;
 
-  // Money is based ONLY on the actual exposed ends. Never round a non-scoring
-  // board (e.g. 8 or 12) into money.
+  // Board money is NEVER rounded. The raw exposed-end total must itself be a
+  // valid five-count. With No 5s, 5 does not score; 10/15/20/25/... do.
   window.money = function () {
     const { total } = exposedEndState();
     if (total <= 0 || total % 5 !== 0) return 0;
     if (room?.rules?.points === 'no5' && total === 5) return 0;
     return total;
+  };
+
+  // The original alpha could create a claim from its older scoring logic.
+  // Validate every pending claim against the ACTUAL current exposed ends before
+  // showing Call Your Money. If the board is 12, 16, etc., no prompt is allowed.
+  const originalCheckClaim = window.checkClaim;
+  window.checkClaim = async function () {
+    if (room?.pendingClaim) {
+      const exact = window.money();
+      if (exact <= 0) {
+        room.log?.unshift(`Open ends total ${exposedEndState().total} — no money.`);
+        room.pendingClaim = null;
+        if (typeof advance === 'function') advance();
+        if (typeof save === 'function') await save();
+        if (typeof render === 'function') render();
+        return;
+      }
+      // Never trust a stale/rounded pending value. Replace it with exact ends.
+      room.pendingClaim.value = exact;
+    }
+    return originalCheckClaim?.();
   };
 
   const originalRenderGame = window.renderGame;
@@ -73,12 +86,10 @@
       return;
     }
 
-    const breakdown = state.rightLabel
-      ? `${state.leftLabel} + ${state.rightLabel} = ${state.total}`
-      : `${state.leftLabel} = ${state.total}`;
+    const breakdown = `${state.leftLabel} + ${state.rightLabel} = ${state.total}`;
     const count = window.money();
     const valid = count > 0;
-    meter.innerHTML = `<span>OPEN ENDS</span><b>${breakdown}</b><em>${valid ? `COUNT ${count}` : 'NO MONEY'}</em>`;
+    meter.innerHTML = `<span>OPEN ENDS</span><b>${breakdown}</b><em>${valid ? `MONEY ${count}` : 'NO MONEY'}</em>`;
     meter.classList.toggle('money', valid);
   };
 
