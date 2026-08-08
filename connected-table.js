@@ -5,9 +5,6 @@
     const dbl=t[0]===t[1];
     return `<div class="boardbone ${dbl?'double':'horizontal'} ${classes}" ${target?`onclick="chooseBoardTarget('${target}')"`:''}>${face(t[0])}<div class="divider"></div>${face(t[1])}</div>`;
   };
-  // Branch tiles are stored [match, outer]. On the UP arm the matching half must
-  // render on the bottom (touching the spinner/previous tile); on DOWN it must
-  // render on top. This keeps the visible board identical to the engine graph.
   const branchBone=(t,side,classes='',target='')=>{
     const shown=side==='U'?[t[1],t[0]]:[t[0],t[1]];
     return `<div class="boardbone vertical ${classes}" ${target?`onclick="chooseBoardTarget('${target}')"`:''}>${face(shown[0])}<div class="divider"></div>${face(shown[1])}</div>`;
@@ -34,8 +31,21 @@
     return `<div class="spinner-branch ${side==='U'?'up':'down'}">${arm.map((t,i)=>branchBone(t,side,(i===arm.length-1&&targets.includes(side))?'play-here':'',i===arm.length-1&&targets.includes(side)?side:'')).join('')}</div>`;
   }
 
+  function sizeForBranches(){
+    if(!window.chain||!room) return;
+    const up=(room.spinnerArms?.U||[]).length;
+    const down=(room.spinnerArms?.D||[]).length;
+    const unit=window.innerWidth<=420?68:76;
+    const top=Math.max(52,up*unit+18);
+    const bottom=Math.max(52,down*unit+18);
+    chain.style.setProperty('padding-top',`${top}px`,'important');
+    chain.style.setProperty('padding-bottom',`${bottom}px`,'important');
+    chain.style.setProperty('min-height',`${top+bottom+82}px`,'important');
+  }
+
   function renderConnectedChain(){
     if(!window.chain||!room) return;
+    sizeForBranches();
     if(!room.chain?.length){chain.innerHTML='<div class="tiny">Open table</div>';return;}
     const targets=legal(),si=spinnerIndex();
     chain.innerHTML=`<div class="connected-chain">${room.chain.map((t,i)=>{
