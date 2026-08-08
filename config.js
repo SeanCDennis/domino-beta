@@ -12,12 +12,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   await addCss('./domino-clarity.css?v=3');
-  await addCss('./connected-table.css?v=2');
+  await addCss('./connected-table.css?v=3');
 
   await addScript('./domino-clarity.js?v=3');
   await addScript('./spinner-engine.js?v=2');
   await addScript('./solo-mode.js?v=7');
   await addScript('./scoring-engine.js?v=4');
   await addScript('./strict-rules.js?v=5');
-  await addScript('./connected-table.js?v=3');
+  await addScript('./connected-table.js?v=4');
 });
