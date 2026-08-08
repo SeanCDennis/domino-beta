@@ -4,16 +4,25 @@ window.DOMINO_CONFIG = {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-  const css = document.createElement('link');
-  css.rel = 'stylesheet';
-  css.href = './domino-clarity.css?v=1';
-  document.head.appendChild(css);
+  const clarityCss = document.createElement('link');
+  clarityCss.rel = 'stylesheet';
+  clarityCss.href = './domino-clarity.css?v=2';
+  document.head.appendChild(clarityCss);
+
+  const connectedCss = document.createElement('link');
+  connectedCss.rel = 'stylesheet';
+  connectedCss.href = './connected-table.css?v=1';
+  document.head.appendChild(connectedCss);
 
   const clarity = document.createElement('script');
-  clarity.src = './domino-clarity.js?v=1';
+  clarity.src = './domino-clarity.js?v=2';
   document.body.appendChild(clarity);
 
   const solo = document.createElement('script');
   solo.src = './solo-mode.js?v=3';
   document.body.appendChild(solo);
+
+  const connected = document.createElement('script');
+  connected.src = './connected-table.js?v=1';
+  document.body.appendChild(connected);
 });
