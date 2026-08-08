@@ -25,7 +25,8 @@
     while(room.players.length<4){const i=room.players.length;room.players.push({token:`BOT-${i}`,name:`Test Player ${i+1}`,seat:i,wallet:coins,wrong:0,bot:true});}
     room.soloTest=true;room.consecutivePasses=0;room.spinner=null;room.spinnerArms={U:[],D:[]};
     await originalStartGame();
-    driveBots();
+    // First-hand bots are intentionally held until strict-rules auto-places Big 6.
+    if(!window.__holdSoloBots) driveBots();
   }
 
   function legalBotMoves(){
@@ -61,7 +62,7 @@
   }
 
   async function driveBots(){
-    if(botRunning) return;
+    if(window.__holdSoloBots||botRunning) return;
     botRunning=true;
     try{
       let guard=0;
