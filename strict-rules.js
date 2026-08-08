@@ -16,7 +16,10 @@
     if(!t) return;
     const legal=typeof legalTargetsForTile==='function'?legalTargetsForTile(t):[];
     if(!legal.includes(target)) return;
-    if(!room.chain.length && !(t[0]===6 && t[1]===6)) return;
+
+    // Only hand 1 is forced to begin with Big 6. Later hands follow the hand winner/leader,
+    // and the first double actually played becomes the spinner.
+    if(room.handNo===1 && !room.chain.length && !(t[0]===6 && t[1]===6)) return;
 
     room.hands[s].splice(i,1);
     if(!placeTileAtTarget(t,target)) { room.hands[s].splice(i,0,t); return; }
@@ -61,7 +64,7 @@
   };
 
   async function autoBigSix(){
-    if(!room || room.phase!=='playing' || room.chain?.length) return;
+    if(!room || room.phase!=='playing' || room.handNo!==1 || room.chain?.length) return;
     let holder=-1,idx=-1;
     for(let s=0;s<4;s++){
       const i=(room.hands?.[s]||[]).findIndex(t=>t[0]===6&&t[1]===6);
@@ -69,6 +72,7 @@
     }
     if(holder<0) return;
     if(typeof ensureSpinnerState==='function') ensureSpinnerState();
+    room.spinner=null;room.spinnerArms={U:[],D:[]};
     room.turn=holder;
     const tile=room.hands[holder][idx];
     room.hands[holder].splice(idx,1);
@@ -81,14 +85,35 @@
     room.turn=(holder+1)%4;
     await save();
     render();
-    if(typeof window.driveBots==='function') window.driveBots();
   }
   window.autoBigSix=autoBigSix;
 
   const oldSolo=window.startSoloTest;
-  if(oldSolo) window.startSoloTest=async function(...args){const out=await oldSolo(...args);await autoBigSix();return out;};
+  if(oldSolo) window.startSoloTest=async function(...args){
+    window.__holdSoloBots=true;
+    const out=await oldSolo(...args);
+    await autoBigSix();
+    window.__holdSoloBots=false;
+    if(typeof window.driveBots==='function') window.driveBots();
+    return out;
+  };
+
   const oldStart=window.startGame;
-  if(oldStart) window.startGame=async function(...args){const out=await oldStart(...args);await autoBigSix();return out;};
+  if(oldStart) window.startGame=async function(...args){
+    window.__holdSoloBots=true;
+    const out=await oldStart(...args);
+    await autoBigSix();
+    window.__holdSoloBots=false;
+    if(typeof window.driveBots==='function') window.driveBots();
+    return out;
+  };
+
   const oldNext=window.nextHand;
-  if(oldNext) window.nextHand=async function(...args){const out=await oldNext(...args);if(room){room.spinner=null;room.spinnerArms={U:[],D:[]};}await autoBigSix();return out;};
+  if(oldNext) window.nextHand=async function(...args){
+    const out=await oldNext(...args);
+    if(room){room.spinner=null;room.spinnerArms={U:[],D:[]};}
+    // No forced Big 6 after hand 1. The first double played becomes the new spinner.
+    if(typeof window.driveBots==='function') window.driveBots();
+    return out;
+  };
 })();
