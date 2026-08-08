@@ -13,6 +13,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   await addCss('./domino-clarity.css?v=3');
   await addCss('./connected-table.css?v=3');
+  await addCss('./mobile-compact.css?v=1');
 
   await addScript('./domino-clarity.js?v=3');
   await addScript('./spinner-engine.js?v=2');
