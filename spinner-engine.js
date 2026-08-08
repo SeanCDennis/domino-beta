@@ -2,16 +2,16 @@
   function ensureSpinnerState(){
     if(!room) return;
     if(!room.spinnerArms) room.spinnerArms={U:[],D:[]};
+    if(!room.spinnerSides) room.spinnerSides={L:false,R:false};
     if(room.spinner===undefined) room.spinner=null;
   }
-
-  function sameDouble(t,v){ return !!t && t[0]===v && t[1]===v; }
 
   function registerSpinner(tile){
     ensureSpinnerState();
     if(!room.spinner && tile && tile[0]===tile[1]){
       room.spinner={value:tile[0]};
       room.spinnerArms={U:[],D:[]};
+      room.spinnerSides={L:false,R:false};
       room.log?.unshift(`${tile[0]}-${tile[1]} is the spinner.`);
     }
   }
@@ -30,16 +30,25 @@
     return arm[arm.length-1][1];
   }
 
+  function spinnerBranchUnlocked(){
+    ensureSpinnerState();
+    return !!(room?.spinner && room.spinnerSides?.L && room.spinnerSides?.R);
+  }
+
   function legalTargetsForTile(tile){
     if(!room || !tile) return [];
     ensureSpinnerState();
     const c=room.chain||[];
     if(!c.length) return ['OPEN'];
+
     const out=[];
     const e=mainEnds();
     if(tile.includes(e.L)) out.push('L');
     if(tile.includes(e.R)) out.push('R');
-    if(room.spinner){
+
+    // Spinner rule: up/down do not open until BOTH original sides of the
+    // first double have been covered. This applies to 6-6, 5-5, 4-4, etc.
+    if(spinnerBranchUnlocked()){
       const u=armEnd('U'), d=armEnd('D');
       if(tile.includes(u)) out.push('U');
       if(tile.includes(d)) out.push('D');
@@ -56,34 +65,39 @@
   function placeTileAtTarget(tile,target){
     if(!room || !tile) return false;
     ensureSpinnerState();
+
     if(target==='OPEN'){
       room.chain.push([tile[0],tile[1]]);
       registerSpinner(tile);
       return true;
     }
+
     if(target==='L'){
       const match=room.chain[0][0];
       const q=orientTo(tile,match);
       if(!q) return false;
       room.chain.unshift([q[1],q[0]]);
+      if(room.spinner && !room.spinnerSides.L) room.spinnerSides.L=true;
       registerSpinner(tile);
       return true;
     }
+
     if(target==='R'){
       const match=room.chain[room.chain.length-1][1];
       const q=orientTo(tile,match);
       if(!q) return false;
       room.chain.push(q);
+      if(room.spinner && !room.spinnerSides.R) room.spinnerSides.R=true;
       registerSpinner(tile);
       return true;
     }
+
     if(target==='U' || target==='D'){
-      if(!room.spinner) return false;
+      if(!spinnerBranchUnlocked()) return false;
       const match=armEnd(target);
       const q=orientTo(tile,match);
       if(!q) return false;
       room.spinnerArms[target].push(q);
-      registerSpinner(tile);
       return true;
     }
     return false;
@@ -114,6 +128,7 @@
 
   window.ensureSpinnerState=ensureSpinnerState;
   window.registerSpinner=registerSpinner;
+  window.spinnerBranchUnlocked=spinnerBranchUnlocked;
   window.legalTargetsForTile=legalTargetsForTile;
   window.placeTileAtTarget=placeTileAtTarget;
   window.spinnerExposedState=spinnerExposedState;
