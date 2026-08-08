@@ -27,6 +27,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.body.appendChild(connected);
 
   const scoring = document.createElement('script');
-  scoring.src = './scoring-engine.js?v=1';
+  scoring.src = './scoring-engine.js?v=2';
   document.body.appendChild(scoring);
 });
